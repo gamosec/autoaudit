@@ -136,7 +136,7 @@ function Dashboard({ onSelect, modules, t, isRTL }) {
       </div>
 
       <div style={{background:"#0f172a",border:"1px solid #1a2744",borderRadius:14,padding:"18px 24px",display:"flex",gap:32,flexWrap:"wrap",animation:"fadeUp 0.5s ease 0.25s both"}}>
-        {[["5",t.statFrameworks],["16",t.statControls],["6",t.statPolicies],["100%",t.statFree]].map(([n,l])=>(
+        {[["5",t.statFrameworks],["93",t.statControls],["6",t.statPolicies],["100%",t.statFree]].map(([n,l])=>(
           <div key={l}><div style={{fontSize:26,fontWeight:900,color:"#f1f5f9"}}>{n}</div><div style={{fontSize:11,color:"#334155",marginTop:2}}>{l}</div></div>
         ))}
       </div>

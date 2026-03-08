@@ -22,7 +22,7 @@ export const T = {
     // Module stats
     policyStats: ["5 Frameworks", "6 Policy Types", "PDF Export"],
     consultantStats: ["All Frameworks", "Real-time Advice", "Context-aware"],
-    gapStats: ["16 Controls", "Evidence Upload", "Live Scoring"],
+    gapStats: ["93 Controls", "Evidence Upload", "Live Scoring"],
 
     // Dashboard
     heroTag: "GRC Intelligence Platform",
@@ -173,7 +173,7 @@ export const T = {
     // Module stats
     policyStats: ["5 أطر", "6 أنواع سياسات", "تصدير PDF"],
     consultantStats: ["جميع الأطر", "مشورة فورية", "واعٍ بالسياق"],
-    gapStats: ["16 ضابطاً", "رفع الأدلة", "تسجيل مباشر"],
+    gapStats: ["93 ضابطاً", "رفع الأدلة", "تسجيل مباشر"],
 
     // Dashboard
     heroTag: "منصة ذكاء GRC",
