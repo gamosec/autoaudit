@@ -109,10 +109,10 @@ const ALL_CONTROLS = CONTROLS.flatMap(d => d.items);
 const TOTAL = ALL_CONTROLS.length; // 93
 
 const VERDICT_STYLE = {
-  Compliant:       { color:"#22c55e", bg:"#14532d20", border:"#22c55e30", icon:"✓" },
-  Partial:         { color:"#eab308", bg:"#78350f20", border:"#eab30830", icon:"~" },
-  "Non-Compliant": { color:"#ef4444", bg:"#7f1d1d20", border:"#ef444430", icon:"✗" },
-  Skipped:         { color:"#64748b", bg:"#1e293b",   border:"#33415530", icon:"—" },
+  Compliant:       { color:"#22c55e", bg:"#14532d20", border:"#22c55e30", icon:"C" },
+  Partial:         { color:"#eab308", bg:"#78350f20", border:"#eab30830", icon:"P" },
+  "Non-Compliant": { color:"#ef4444", bg:"#7f1d1d20", border:"#ef444430", icon:"X" },
+  Skipped:         { color:"#64748b", bg:"#1e293b",   border:"#33415530", icon:"-" },
 };
 
 // ── Prompts ──────────────────────────────────────────────────────────────────
@@ -483,7 +483,7 @@ function Assessment({ form, onReset, t, isRTL, lang }) {
               <div style={{fontSize:11,color:"#475569",marginBottom:10}}>{results.length} / {TOTAL} {t.controlsAssessed}</div>
               {/* Verdict counts */}
               <div style={{display:"flex",gap:6}}>
-                {[["Compliant","#22c55e","✓"],["Partial","#eab308","~"],["Non-Compliant","#ef4444","✗"]].map(([v,c,icon])=>{
+                {[["Compliant","#22c55e","C"],["Partial","#eab308","P"],["Non-Compliant","#ef4444","X"]].map(([v,c,icon])=>{
                   const n = results.filter(r=>r.verdict===v).length;
                   return <div key={v} style={{flex:1,textAlign:"center",padding:"6px 4px",background:c+"12",borderRadius:7,border:`1px solid ${c}25`}}>
                     <div style={{fontSize:18,fontWeight:800,color:c}}>{n}</div>
