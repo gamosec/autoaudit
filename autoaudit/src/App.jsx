@@ -109,14 +109,21 @@ function Chatbot({ report, form }) {
     const newMsgs = [...messages, { role:"user", text:q }];
     setMessages(newMsgs);
     setLoading(true);
-    const ctx = `You are AutoAudit AI, a helpful cybersecurity GRC assistant. The user just generated this audit report:
-Org: ${form.orgName} (${form.industry}, ${form.size}) | Framework: ${form.framework}
-Policy: ${report.policyTitle} | Score: ${report.complianceScore}/100 | Maturity: ${report.maturityLevel}
-Findings: ${JSON.stringify(report.riskFindings)}
-Alignment: ${JSON.stringify(report.frameworkAlignment)}
-Next Steps: ${JSON.stringify(report.nextSteps)}
-Answer concisely and helpfully. Be specific. Keep answers under 150 words unless detail is needed.
-User question: ${q}`;
+    const gaps = (report.frameworkAlignment||[]).filter(x=>x.status==="Gap Identified").map(x=>`${x.controlId} (${x.controlName}): ${x.notes}`).join("; ");
+    const partial = (report.frameworkAlignment||[]).filter(x=>x.status==="Partial Coverage").map(x=>`${x.controlId} (${x.controlName}): ${x.notes}`).join("; ");
+    const findings = (report.riskFindings||[]).map(x=>`[${x.severity}] ${x.finding} Fix: ${x.recommendation}`).join(" | ");
+    const steps = (report.nextSteps||[]).join("; ");
+    const ctx = `You are AutoAudit AI, a friendly cybersecurity expert. Answer ONLY in plain conversational English sentences. No JSON, no curly braces, no raw data.
+
+Report for ${form.orgName} (${form.industry}):
+- Framework: ${form.framework}, Score: ${report.complianceScore}/100, Maturity: ${report.maturityLevel}
+- Gaps: ${gaps || "None"}
+- Partial: ${partial || "None"}  
+- Findings: ${findings}
+- Next steps: ${steps}
+
+Reply in 2-4 plain English sentences. Be specific to ${form.orgName}. Do NOT output JSON.
+Question: ${q}`;
     try {
       const res = await fetch("/api/chat", {
         method:"POST", headers:{"Content-Type":"application/json"},
