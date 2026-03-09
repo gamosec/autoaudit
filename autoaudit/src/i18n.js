@@ -142,7 +142,7 @@ export const T = {
     // Industries
     industries: ["Financial Services","Healthcare","E-Commerce / Retail","Technology / SaaS","Government","Manufacturing","Education"],
     orgSizes: ["Small (< 50 employees)","Medium (50-500 employees)","Large (500+ employees)"],
-    policyTypes: ["Information Security Policy","Access Control Policy","Data Classification Policy","Incident Response Policy","Acceptable Use Policy"],
+    policyTypes: ["Information Security Policy","Access Control Policy","Data Classification Policy","Incident Response Policy","Acceptable Use Policy","Password Policy","Business Continuity Policy"],
 
     // Maturity levels
     matLevels: ["Initial","Developing","Defined","Managed","Optimising"],
@@ -293,7 +293,7 @@ export const T = {
     // Industries
     industries: ["الخدمات المالية","الرعاية الصحية","التجارة الإلكترونية / التجزئة","التكنولوجيا / SaaS","الحكومة","التصنيع","التعليم"],
     orgSizes: ["صغيرة (أقل من 50 موظف)","متوسطة (50-500 موظف)","كبيرة (أكثر من 500 موظف)"],
-    policyTypes: ["سياسة أمن المعلومات","سياسة التحكم في الوصول","سياسة تصنيف البيانات","سياسة الاستجابة للحوادث","سياسة الاستخدام المقبول"],
+    policyTypes: ["سياسة أمن المعلومات","سياسة التحكم في الوصول","سياسة تصنيف البيانات","سياسة الاستجابة للحوادث","سياسة الاستخدام المقبول","سياسة كلمات المرور","سياسة استمرارية الأعمال"],
 
     // Maturity levels
     matLevels: ["مبدئي","متطور","محدد","مُدار","مُحسَّن"],
