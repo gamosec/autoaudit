@@ -20,7 +20,7 @@ export const T = {
     gapDesc: "ISO 27001:2022 structured interview — upload evidence, receive verdicts per control",
 
     // Module stats
-    policyStats: ["5 Frameworks", "6 Policy Types", "PDF Export"],
+    policyStats: ["5 Frameworks", "20 Policy Types", "Word Export"],
     consultantStats: ["All Frameworks", "Real-time Advice", "Context-aware"],
     gapStats: ["93 Controls", "Evidence Upload", "Live Scoring"],
 
@@ -32,7 +32,7 @@ export const T = {
     openModule: "Open",
     statFrameworks: "Compliance Frameworks",
     statControls: "ISO 27001 Controls",
-    statPolicies: "Policy Types",
+    statPolicies: "Policy Types (ISO+PCI)",
     statFree: "Free · No API Key",
 
     // Policy Module
@@ -142,7 +142,15 @@ export const T = {
     // Industries
     industries: ["Financial Services","Healthcare","E-Commerce / Retail","Technology / SaaS","Government","Manufacturing","Education"],
     orgSizes: ["Small (< 50 employees)","Medium (50-500 employees)","Large (500+ employees)"],
-    policyTypes: ["Information Security Policy","Access Control Policy","Data Classification Policy","Incident Response Policy","Acceptable Use Policy","Password Policy","Business Continuity Policy"],
+    policyTypes: [
+      "Information Security Policy","Acceptable Use Policy","Risk Assessment Policy","Human Resources Security Policy",
+      "Access Control Policy","Password Policy",
+      "Data Classification Policy","Cryptography Policy","Data Retention & Disposal Policy","Backup & Recovery Policy",
+      "Network Security Policy","Physical Security Policy","Asset Management Policy","Logging & Monitoring Policy",
+      "Vulnerability Management Policy","Secure Development Policy","Change Management Policy",
+      "Incident Response Policy","Business Continuity Policy",
+      "Supplier & Third-Party Security Policy"
+    ],
 
     // Maturity levels
     matLevels: ["Initial","Developing","Defined","Managed","Optimising"],
@@ -171,7 +179,7 @@ export const T = {
     gapDesc: "مقابلة منظمة لمعيار ISO 27001:2022 — ارفع الأدلة واحصل على أحكام لكل ضابط",
 
     // Module stats
-    policyStats: ["5 أطر", "6 أنواع سياسات", "تصدير PDF"],
+    policyStats: ["5 أطر", "20 نوع سياسة", "تصدير Word"],
     consultantStats: ["جميع الأطر", "مشورة فورية", "واعٍ بالسياق"],
     gapStats: ["93 ضابطاً", "رفع الأدلة", "تسجيل مباشر"],
 
@@ -293,7 +301,15 @@ export const T = {
     // Industries
     industries: ["الخدمات المالية","الرعاية الصحية","التجارة الإلكترونية / التجزئة","التكنولوجيا / SaaS","الحكومة","التصنيع","التعليم"],
     orgSizes: ["صغيرة (أقل من 50 موظف)","متوسطة (50-500 موظف)","كبيرة (أكثر من 500 موظف)"],
-    policyTypes: ["سياسة أمن المعلومات","سياسة التحكم في الوصول","سياسة تصنيف البيانات","سياسة الاستجابة للحوادث","سياسة الاستخدام المقبول","سياسة كلمات المرور","سياسة استمرارية الأعمال"],
+    policyTypes: [
+      "سياسة أمن المعلومات","سياسة الاستخدام المقبول","سياسة تقييم المخاطر","سياسة أمن الموارد البشرية",
+      "سياسة التحكم في الوصول","سياسة كلمات المرور",
+      "سياسة تصنيف البيانات","سياسة التشفير","سياسة الاحتفاظ بالبيانات والتخلص منها","سياسة النسخ الاحتياطي والاسترداد",
+      "سياسة أمن الشبكات","سياسة الأمن المادي","سياسة إدارة الأصول","سياسة التسجيل والمراقبة",
+      "سياسة إدارة الثغرات","سياسة التطوير الآمن","سياسة إدارة التغيير",
+      "سياسة الاستجابة للحوادث","سياسة استمرارية الأعمال",
+      "سياسة أمن الموردين وأطراف ثالثة"
+    ],
 
     // Maturity levels
     matLevels: ["مبدئي","متطور","محدد","مُدار","مُحسَّن"],
