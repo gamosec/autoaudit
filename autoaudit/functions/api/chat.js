@@ -7,14 +7,14 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin":  "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json",
   };
 
   try {
-    const body = await request.json();
+    const body        = await request.json();
     const userMessage = body?.messages?.[0]?.content || "";
 
     if (!userMessage) {
@@ -23,23 +23,32 @@ export async function onRequestPost(context) {
       });
     }
 
-    // Detect if this is a JSON-generating request or a chat/assessment request
-    const isJsonRequest = userMessage.includes("Respond with ONLY a raw JSON") || userMessage.includes("CRITICAL: Respond with ONLY a raw JSON");
-    const systemPrompt = isJsonRequest
-      ? "You are AutoAudit, an expert cybersecurity GRC AI agent. You only respond with raw JSON objects. Never use markdown, backticks, or explanation. Start every response with { and end with }."
-      : "You are AutoAudit, an expert cybersecurity GRC AI agent specializing in ISO 27001, NIST CSF, PCI-DSS, GDPR, and SOC 2. You support both English and Arabic. When the user writes in Arabic or instructs you to respond in Arabic, always respond fully in Arabic. Give concise, expert, practical answers.";
+    // Detect policy / JSON-generation requests — covers all prompt variants
+    const isJsonRequest =
+      userMessage.includes("Output ONLY this JSON")                  ||
+      userMessage.includes("Respond with ONLY a raw JSON")           ||
+      userMessage.includes("CRITICAL: Respond with ONLY a raw JSON") ||
+      userMessage.includes("SANS Institute template")                ||
+      userMessage.includes("Output ONLY the JSON");
 
-    // Call Cloudflare Workers AI — uses env.AI binding (free)
+    const systemPrompt = isJsonRequest
+      ? `You are a professional information security policy writer.
+You output ONLY raw JSON objects — no markdown, no backticks, no explanation.
+Start your response with { and end with }.
+Never include compliance scores, maturity levels, gap analysis, or audit findings.`
+      : `You are AutoAudit, an expert cybersecurity GRC AI agent specializing in ISO 27001, NIST CSF, PCI-DSS, GDPR, and SOC 2.
+You support both English and Arabic. When the user writes in Arabic, always respond fully in Arabic.
+Give concise, expert, practical answers.`;
+
     const aiResponse = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user",   content: userMessage }
+        { role: "user",   content: userMessage  }
       ],
-      max_tokens: 2048,
-      temperature: 0.35,
+      max_tokens:  3000,
+      temperature: 0.3,
     });
 
-    // Workers AI returns { response: "..." }
     const text = aiResponse?.response || "";
 
     if (!text) {
@@ -48,7 +57,6 @@ export async function onRequestPost(context) {
       });
     }
 
-    // Return in same shape the frontend expects
     return new Response(JSON.stringify({
       content: [{ type: "text", text }]
     }), { status: 200, headers: corsHeaders });
@@ -65,7 +73,7 @@ export async function onRequestOptions() {
   return new Response(null, {
     status: 204,
     headers: {
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin":  "*",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     },
