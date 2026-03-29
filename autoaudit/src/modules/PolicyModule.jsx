@@ -366,8 +366,9 @@ async function dbSavePolicy(id, form, result, lang) {
       body: JSON.stringify({
         action:"save", id,
         org_name:form.orgName, industry:form.industry, size:form.size,
-        framework:form.framework, policy_type:form.policyType, lang,
-        result
+        framework:form.framework, policy_type:form.policyType,
+        policy_ref: result?.policyRef || "", lang,
+        policy: result
       })
     });
   } catch {}
@@ -376,7 +377,7 @@ async function dbLoadPolicy(id) {
   try {
     const res  = await fetch("/api/policy-session?id=" + id);
     const data = await res.json();
-    return data.ok ? data.policy : null;
+    return data.ok ? data.session : null;
   } catch { return null; }
 }
 async function dbDeletePolicy(id) {
