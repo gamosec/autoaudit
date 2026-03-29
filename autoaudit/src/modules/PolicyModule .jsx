@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const FRAMEWORKS = {
   "ISO 27001:2022": { color:"#0ea5e9", badge:"ISO"  },
@@ -352,15 +352,70 @@ ${sectionsHTML}
   URL.revokeObjectURL(url);
 }
 
+// ── D1 policy session helpers ────────────────────────────────────────────────
+const POLICY_KEY = "autoaudit_policy_session_id";
+function loadPolicyId()   { try { return localStorage.getItem(POLICY_KEY); } catch { return null; } }
+function savePolicyId(id) { try { localStorage.setItem(POLICY_KEY, id); } catch {} }
+function clearPolicyId()  { try { localStorage.removeItem(POLICY_KEY); } catch {} }
+function genPolicyId()    { return "pol_" + Date.now() + "_" + Math.random().toString(36).slice(2,8); }
+
+async function dbSavePolicy(id, form, result, lang) {
+  try {
+    await fetch("/api/policy-session", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        action:"save", id,
+        org_name:form.orgName, industry:form.industry, size:form.size,
+        framework:form.framework, policy_type:form.policyType, lang,
+        result
+      })
+    });
+  } catch {}
+}
+async function dbLoadPolicy(id) {
+  try {
+    const res  = await fetch("/api/policy-session?id=" + id);
+    const data = await res.json();
+    return data.ok ? data.policy : null;
+  } catch { return null; }
+}
+async function dbDeletePolicy(id) {
+  try { await fetch("/api/policy-session?id=" + id, { method:"DELETE" }); } catch {}
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function PolicyModule({ t, isRTL, lang }) {
-  const [step,   setStep]   = useState("form");
-  const [form,   setForm]   = useState({ orgName:"", industry:"", size:"", framework:"", policyType:"" });
-  const [policy, setPolicy] = useState(null);
-  const [error,  setError]  = useState("");
+  const [step,      setStep]      = useState("checking"); // checking|resume|form|loading|result
+  const [form,      setForm]      = useState({ orgName:"", industry:"", size:"", framework:"", policyType:"" });
+  const [policy,    setPolicy]    = useState(null);
+  const [error,     setError]     = useState("");
+  const [savedMeta, setSavedMeta] = useState(null); // {orgName, policyType, framework, policyRef, id}
+  const [saveStatus,setSaveStatus]= useState("idle"); // idle|saving|saved|error
 
   const fw      = FRAMEWORKS[form.framework] || { color:"#0ea5e9" };
   const polMeta = POLICY_CATALOGUE[form.policyType] || {};
+
+  // On mount: check for a saved policy session
+  useEffect(() => {
+    const storedId = loadPolicyId();
+    if (!storedId) { setStep("form"); return; }
+    dbLoadPolicy(storedId).then(session => {
+      if (session?.policy) {
+        setSavedMeta({
+          id:         storedId,
+          orgName:    session.org_name,
+          policyType: session.policy_type,
+          framework:  session.framework,
+          policyRef:  session.policy_ref,
+          updatedAt:  session.updated_at,
+        });
+        setStep("resume");
+      } else {
+        clearPolicyId();
+        setStep("form");
+      }
+    }).catch(() => setStep("form"));
+  }, []);
 
   async function generate() {
     if (!form.orgName||!form.industry||!form.size||!form.framework||!form.policyType) {
@@ -377,11 +432,55 @@ export default function PolicyModule({ t, isRTL, lang }) {
       const raw    = (data.content||[]).map(b=>b.text||"").join("");
       const parsed = safeJSON(raw);
       if (!parsed||!parsed.policyStatements) throw new Error(t.parseError);
+
+      // Save to D1
+      setSaveStatus("saving");
+      const sid = genPolicyId();
+      savePolicyId(sid);
+      await dbSavePolicy(sid, form, parsed, lang);
+      setSaveStatus("saved");
+
       setPolicy(parsed); setStep("result");
-    } catch(e) { setError("Error: "+e.message); setStep("form"); }
+    } catch(e) { setError("Error: "+e.message); setStep("form"); setSaveStatus("idle"); }
   }
 
-  function reset() { setStep("form"); setPolicy(null); setError(""); }
+  async function resumeSaved() {
+    if (!savedMeta) return;
+    setStep("checking");
+    const session = await dbLoadPolicy(savedMeta.id);
+    if (session?.policy) {
+      setForm({
+        orgName:    session.org_name,
+        industry:   session.industry,
+        size:       session.size,
+        framework:  session.framework,
+        policyType: session.policy_type,
+      });
+      setPolicy(session.policy);
+      setSaveStatus("saved");
+      setStep("result");
+    } else {
+      clearPolicyId();
+      setStep("form");
+    }
+  }
+
+  function startNew() {
+    const oldId = loadPolicyId();
+    if (oldId) dbDeletePolicy(oldId);
+    clearPolicyId();
+    setPolicy(null); setSavedMeta(null);
+    setForm({ orgName:"", industry:"", size:"", framework:"", policyType:"" });
+    setStep("form");
+  }
+
+  function reset() {
+    const id = loadPolicyId();
+    if (id) dbDeletePolicy(id);
+    clearPolicyId();
+    setStep("form"); setPolicy(null); setError(""); setSaveStatus("idle"); setSavedMeta(null);
+    setForm({ orgName:"", industry:"", size:"", framework:"", policyType:"" });
+  }
 
   // ── small helpers ──
   function Lbl({ children }) {
@@ -411,6 +510,77 @@ export default function PolicyModule({ t, isRTL, lang }) {
           {icon} {title}
         </div>
         {children}
+      </div>
+    );
+  }
+
+  // ── CHECKING spinner ──────────────────────────────────────────────────────
+  if (step==="checking") return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:300}}>
+      <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
+      <div style={{position:"relative",width:40,height:40}}>
+        <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid #1e293b"}}/>
+        <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid transparent",borderTopColor:"#0ea5e9",animation:"sp 0.9s linear infinite"}}/>
+      </div>
+    </div>
+  );
+
+  // ── RESUME banner ──────────────────────────────────────────────────────────
+  if (step==="resume" && savedMeta) {
+    const savedFw = FRAMEWORKS[savedMeta.framework] || { color:"#0ea5e9", badge:"?" };
+    const savedMd = POLICY_CATALOGUE[savedMeta.policyType] || { icon:"📄" };
+    const savedDate = savedMeta.updatedAt
+      ? new Date(savedMeta.updatedAt).toLocaleDateString(isRTL?"ar-SA":"en-GB",{day:"numeric",month:"short",year:"numeric"})
+      : "";
+    return (
+      <div style={{maxWidth:540}} dir={isRTL?"rtl":"ltr"}>
+        <h2 style={{fontSize:22,fontWeight:900,color:"#f1f5f9",marginBottom:6}}>{t.policyTitle}</h2>
+        <p style={{color:"#475569",fontSize:13,marginBottom:20}}>
+          {isRTL?"أنشئ وثيقة سياسة احترافية وفق قالب SANS.":"Generate a complete professional policy document using the SANS Institute template."}
+        </p>
+
+        <div style={{background:"#0f172a",border:"1px solid #0ea5e940",borderRadius:14,padding:24,marginBottom:14,position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,#0ea5e9,#8b5cf6)"}}/>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+            <div style={{width:38,height:38,borderRadius:"50%",background:"linear-gradient(135deg,#0ea5e9,#0284c7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>💾</div>
+            <div>
+              <div style={{fontSize:13,fontWeight:800,color:"#f1f5f9"}}>{isRTL?"سياسة محفوظة":"Saved Policy Found"}</div>
+              <div style={{fontSize:11,color:"#475569"}}>{isRTL?"يمكنك استعادة وثيقتك الأخيرة":"Restore your last generated document"}</div>
+            </div>
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+            {[
+              [isRTL?"المنظمة":"Organization",  savedMeta.orgName],
+              [isRTL?"الإطار":"Framework",       savedMeta.framework],
+              [isRTL?"نوع السياسة":"Policy",     savedMeta.policyType],
+              [isRTL?"المرجع":"Reference",        savedMeta.policyRef || "—"],
+            ].map(([l,v])=>(
+              <div key={l} style={{background:"#080e1c",borderRadius:8,padding:"10px 12px"}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#475569",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:3}}>{l}</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#e2e8f0",lineHeight:1.3}}>{v}</div>
+              </div>
+            ))}
+          </div>
+
+          {savedDate && (
+            <div style={{fontSize:11,color:"#334155",marginBottom:14,display:"flex",alignItems:"center",gap:5}}>
+              <span style={{color:"#22c55e"}}>●</span>
+              {isRTL?"آخر حفظ: ":"Last saved: "}{savedDate} · Cloudflare D1
+            </div>
+          )}
+
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={resumeSaved}
+              style={{flex:1,padding:"11px",background:"linear-gradient(135deg,#0ea5e9,#0284c7)",border:"none",borderRadius:9,color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer"}}>
+              {savedMd.icon} {isRTL?"استعادة السياسة":"Restore Policy"}
+            </button>
+            <button onClick={startNew}
+              style={{padding:"11px 16px",background:"#1e293b",border:"1px solid #334155",borderRadius:9,color:"#94a3b8",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+              {isRTL?"سياسة جديدة":"New Policy"}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -546,12 +716,23 @@ export default function PolicyModule({ t, isRTL, lang }) {
     <div style={{maxWidth:820,animation:"fadeUp 0.3s ease"}} dir={isRTL?"rtl":"ltr"}>
 
       {/* Action bar */}
-      <div style={{display:"flex",gap:10,marginBottom:18,alignItems:"center"}}>
-        <button onClick={reset}
+      <div style={{display:"flex",gap:10,marginBottom:18,alignItems:"center",flexWrap:"wrap"}}>
+        <button onClick={startNew}
           style={{padding:"8px 14px",background:"#0f172a",border:"1px solid #1e293b",
             borderRadius:9,fontSize:12,fontWeight:700,color:"#94a3b8",cursor:"pointer"}}>
           {isRTL?"→ سياسة جديدة":"← New Policy"}
         </button>
+        {/* D1 save status */}
+        <div style={{display:"flex",alignItems:"center",gap:5,padding:"5px 10px",
+          background:"#0f172a",border:"1px solid #1a2744",borderRadius:7}}>
+          <style>{`@keyframes sp2{to{transform:rotate(360deg)}}`}</style>
+          {saveStatus==="saving" && <div style={{width:6,height:6,borderRadius:"50%",border:"2px solid transparent",borderTopColor:"#f59e0b",animation:"sp2 0.8s linear infinite"}}/>}
+          {saveStatus==="saved"  && <span style={{color:"#22c55e",fontSize:10}}>●</span>}
+          {saveStatus==="idle"   && <span style={{color:"#475569",fontSize:10}}>●</span>}
+          <span style={{fontSize:10,fontWeight:700,color:saveStatus==="saved"?"#22c55e":saveStatus==="saving"?"#f59e0b":"#475569"}}>
+            {saveStatus==="saving"?(isRTL?"حفظ…":"Saving…"):saveStatus==="saved"?(isRTL?"محفوظ في D1":"Saved to D1"):"D1"}
+          </span>
+        </div>
         <div style={{flex:1}}/>
         <button onClick={()=>downloadWord(policy,form.orgName,form.framework,form.policyType,lang)}
           style={{padding:"9px 20px",background:"linear-gradient(135deg,#10b981,#059669)",
