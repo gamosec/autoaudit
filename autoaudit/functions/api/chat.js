@@ -119,7 +119,7 @@ Instructions:
         { role: "system", content: systemPrompt },
         { role: "user",   content: userMessage  }
       ],
-      max_tokens:  3000,
+      max_tokens:  8192,
       temperature: 0.2,
     });
 

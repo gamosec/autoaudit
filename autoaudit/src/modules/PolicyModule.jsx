@@ -107,14 +107,36 @@ const POLICY_CATALOGUE = {
 
 function safeJSON(raw) {
   try {
+    // Strip markdown fences if present
     let t = raw.trim()
       .replace(/^```(?:json)?[\r\n]*/i, "")
       .replace(/[\r\n]*```\s*$/i, "")
       .trim();
-    const s = t.indexOf("{"), e = t.lastIndexOf("}");
-    if (s < 0 || e < 0) return null;
-    const obj = JSON.parse(t.slice(s, e + 1));
-    // Safety net: remove any audit fields even if Llama added them
+
+    // Find the start of the root JSON object
+    const s = t.indexOf("{");
+    if (s < 0) return null;
+
+    // Use brace-depth matching to find the true closing } of the root object.
+    // Safer than lastIndexOf("}") which lands inside a nested object
+    // when the response is truncated mid-JSON.
+    let depth = 0, end = -1, inStr = false, escape = false;
+    for (let i = s; i < t.length; i++) {
+      const ch = t[i];
+      if (escape)          { escape = false; continue; }
+      if (ch === "\\")     { escape = true;  continue; }
+      if (ch === "\"")     { inStr = !inStr; continue; }
+      if (inStr)           continue;
+      if (ch === "{")      depth++;
+      else if (ch === "}") { depth--; if (depth === 0) { end = i; break; } }
+    }
+
+    // If we never closed the root object the response was truncated — bail out
+    if (end < 0) return null;
+
+    const obj = JSON.parse(t.slice(s, end + 1));
+
+    // Safety net: strip any audit/gap fields Llama might have added
     ["complianceScore","maturityLevel","frameworkAlignment",
      "riskFindings","auditFindings","findings","gaps"].forEach(k => delete obj[k]);
     return obj;
