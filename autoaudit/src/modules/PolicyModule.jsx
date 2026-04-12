@@ -143,65 +143,64 @@ function safeJSON(raw) {
   } catch { return null; }
 }
 
-// ── Prompt: minimal schema, Llama-friendly, no negative instructions ──────────
+// ── Prompt: task-only, no conflicting role in user message ──────────────────
 function makePrompt(f, lang) {
   const ar   = lang === "ar";
   const meta = POLICY_CATALOGUE[f.policyType] || { ref:"POL-001", sans:"Security Policy" };
+  const cls  = ar ? "داخلي — سري" : "Internal — Confidential";
 
-  return `You are a professional policy writer using the SANS Institute template.
-${ar ? "Write all text fields in Arabic. Keep codes and dates in English." : "Write in English."}
+  return `Generate a complete ${f.policyType} for ${f.orgName} (${f.industry}, ${f.size}) aligned to ${f.framework}, using the SANS Institute template format.
+${ar ? "Write all value strings in Arabic. Keep JSON keys, reference codes, and dates in English." : "Write all values in English."}
 
-Write a ${f.policyType} for ${f.orgName} (${f.industry}, ${f.size}) aligned to ${f.framework}.
-
-Output ONLY this JSON. Start with { and end with }. No other text.
+Respond with ONLY a raw JSON object. No markdown. No code fences. No explanation text before or after. Start your response with { and end with }.
 
 {
-  "policyTitle": "full official title",
+  "policyTitle": "official title of this policy",
   "policyRef": "${meta.ref}",
   "version": "1.0",
   "effectiveDate": "2025-03-01",
   "reviewDate": "2026-03-01",
-  "owner": "job title of policy owner",
-  "approver": "job title of approver",
-  "classification": "${ar ? "داخلي — سري" : "Internal — Confidential"}",
-  "purpose": "2 sentences: why this policy exists",
-  "scope": "2 sentences: who and what this policy covers",
+  "owner": "job title of the policy owner",
+  "approver": "job title of the approver",
+  "classification": "${cls}",
+  "purpose": "2 sentences explaining why this policy exists",
+  "scope": "2 sentences describing who and what this policy covers",
   "roles": [
-    { "role": "job title", "responsibility": "their duty under this policy" },
-    { "role": "job title", "responsibility": "their duty" },
-    { "role": "job title", "responsibility": "their duty" }
+    { "role": "job title", "responsibility": "their specific duty under this policy" },
+    { "role": "job title", "responsibility": "their specific duty" },
+    { "role": "job title", "responsibility": "their specific duty" }
   ],
   "policyStatements": [
     {
-      "sectionTitle": "e.g. 5.1 User Access Management",
+      "sectionTitle": "5.1 Section Name",
       "statements": [
-        "All users SHALL have unique accounts.",
-        "Privileged access MUST be approved by the CISO.",
-        "Shared accounts MUST NOT be used."
+        "Statement using SHALL or MUST.",
+        "Statement using SHALL or MUST.",
+        "Statement using MUST NOT."
       ]
     },
     {
-      "sectionTitle": "next section",
-      "statements": ["statement 1", "statement 2", "statement 3"]
+      "sectionTitle": "5.2 Section Name",
+      "statements": ["Statement 1.", "Statement 2.", "Statement 3."]
     },
     {
-      "sectionTitle": "next section",
-      "statements": ["statement 1", "statement 2", "statement 3"]
+      "sectionTitle": "5.3 Section Name",
+      "statements": ["Statement 1.", "Statement 2.", "Statement 3."]
     },
     {
-      "sectionTitle": "next section",
-      "statements": ["statement 1", "statement 2", "statement 3"]
+      "sectionTitle": "5.4 Section Name",
+      "statements": ["Statement 1.", "Statement 2.", "Statement 3."]
     }
   ],
   "frameworkMapping": "2 sentences naming specific ${f.framework} controls this policy satisfies",
-  "exceptions": "1 sentence on how exceptions are requested",
-  "enforcement": "1 sentence on consequences of violation",
+  "exceptions": "1 sentence on how exceptions are requested and approved",
+  "enforcement": "1 sentence on consequences for policy violations",
   "definitions": [
-    { "term": "term", "definition": "definition" },
-    { "term": "term", "definition": "definition" },
-    { "term": "term", "definition": "definition" }
+    { "term": "relevant term", "definition": "its definition" },
+    { "term": "relevant term", "definition": "its definition" },
+    { "term": "relevant term", "definition": "its definition" }
   ],
-  "relatedDocuments": ["Document 1", "Document 2", "Document 3"]
+  "relatedDocuments": ["Related Policy 1", "Related Policy 2", "Related Policy 3"]
 }`;
 }
 
@@ -452,8 +451,15 @@ export default function PolicyModule({ t, isRTL, lang }) {
       if (!res.ok) throw new Error("API " + res.status);
       const data   = await res.json();
       const raw    = (data.content||[]).map(b=>b.text||"").join("");
+      // Debug: log first 300 chars of raw response to browser console
+      console.log("[PolicyGen] raw response (first 300):", raw.slice(0,300));
+      console.log("[PolicyGen] debug field:", data._debug);
       const parsed = safeJSON(raw);
-      if (!parsed||!parsed.policyStatements) throw new Error(t.parseError);
+      if (!parsed||!parsed.policyStatements) {
+        // Include raw snippet in error so it's visible in the UI for diagnosis
+        const snippet = raw ? raw.slice(0,120).replace(/\n/g," ") : "(empty)";
+        throw new Error(t.parseError + " | got: " + snippet);
+      }
 
       // Save to D1
       setSaveStatus("saving");

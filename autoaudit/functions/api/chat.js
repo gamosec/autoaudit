@@ -97,9 +97,11 @@ export async function onRequestPost(context) {
 
     const systemPrompt = isJsonRequest
       ? `You are a professional information security policy writer.
-You output ONLY raw JSON objects — no markdown, no backticks, no explanation.
-Start your response with { and end with }.
-Never include compliance scores, maturity levels, gap analysis, or audit findings in a policy document.`
+Your entire response must be a single raw JSON object.
+Do NOT write any text before or after the JSON.
+Do NOT use markdown code fences or backticks.
+Begin your response immediately with { and end with }.
+Do NOT add any explanation, introduction, or commentary.`
       : `You are AutoAudit, an expert AI cybersecurity and GRC consultant with deep knowledge of information security standards and frameworks.
 
 You have access to the following accurate reference data — always use it when answering questions about these frameworks:
@@ -132,7 +134,8 @@ Instructions:
     }
 
     return new Response(JSON.stringify({
-      content: [{ type: "text", text }]
+      content: [{ type: "text", text }],
+      _debug: text.slice(0, 200)   // first 200 chars for parse diagnostics
     }), { status: 200, headers: CORS });
 
   } catch (err) {
